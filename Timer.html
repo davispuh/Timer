@@ -1,0 +1,165 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8" />
+    <title>Timer</title>
+    <style type="text/css">
+        /* <![CDATA[ */
+        html, body {
+            width: 100%;
+            margin: 0px;
+            padding: 0px;
+        }
+
+        #timer {
+            font-size: 19vw;
+            font-family: "Lucida Console", Monaco, monospace;
+            margin-top: 20vh;
+        }
+
+        .center {
+            margin: auto;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .small {
+            min-width: 300px;
+            width: 25%;
+            height: 100%;
+        }
+
+        #modifier {
+            min-width: 200px;
+        }
+        /* ]]> */
+    </style>
+</head>
+<body>
+    <div>
+        <div class="center" id="timer">00:00.00</div>
+        <script type="text/javascript">
+            // <![CDATA[
+
+            function $(id) {
+                return document.getElementById(id);
+            };
+
+            function Split(TimeText) {
+                var Parts = [0, 0, 0];
+                if (!TimeText) return Parts;
+                var TimeParts = TimeText.split(":");
+                for (var i = TimeParts.length - 1; i >= 0; i--) {
+                    var j = 3 - (TimeParts.length - i);
+                    if (j < 0) continue;
+                    Parts[j] = parseInt(TimeParts[i], 10);
+                    if (isNaN(Parts[j])) Parts[j] = 0;
+                }
+                return Parts;
+            }
+            Timer = new Object();
+            Timer.Hours = 0;
+            Timer.Minutes = 0;
+            Timer.Seconds = 0;
+            Timer.PreviousHours = 0;
+            Timer.PreviousMinutes = 0;
+            Timer.PreviousSeconds = 0;
+            Timer.Modifier = 1.0;
+            Timer.Started = null;
+            Timer.Interval = null;
+            Timer.Update = function () {
+                var Elapsed = ((new Date()).getTime() - Timer.Started) * Timer.Modifier;
+                var ElapsedSeconds = (Elapsed % 60000) / 1000;
+                Elapsed = Math.floor(Elapsed / 60000);
+                var ElapsedMinutes = Elapsed % 60;
+                var ElapsedHours = Math.floor(Elapsed / 60);
+                var TimeText = "";
+                Timer.PreviousSeconds = (Timer.Seconds - ElapsedSeconds) % 60;
+                Timer.PreviousMinutes = (Timer.Minutes - ElapsedMinutes) % 60;
+                Timer.PreviousHours = Timer.Hours - ElapsedHours;
+                if (Timer.PreviousSeconds < 0) {
+                    Timer.PreviousSeconds = 60 + Timer.PreviousSeconds;
+                    Timer.PreviousMinutes = Timer.PreviousMinutes - 1;
+                };
+                if (Timer.PreviousMinutes < 0) {
+                    Timer.PreviousMinutes = 60 + Timer.PreviousMinutes;
+                    Timer.PreviousHours = Timer.PreviousHours - 1;
+                };
+                if (Timer.PreviousHours < 0 || Timer.PreviousMinutes < 0 || Timer.PreviousSeconds < 0) {
+                    TimeText = "00:00.00";
+                    Stop();
+                } else {
+                    if (Timer.PreviousHours > 0) {
+                        TimeText = ((Timer.PreviousHours < 10) ? "0" : "") + Timer.PreviousHours + ":"
+                    }
+                    TimeText += ((Timer.PreviousMinutes < 10) ? "0" : "") + Timer.PreviousMinutes + ":"
+                    var MiliSeconds = ((Timer.PreviousSeconds < 10) ? "0" : "") + Math.floor(Timer.PreviousSeconds * 100) / 100;
+                    TimeText += MiliSeconds + (MiliSeconds.length == 2 ? ".0" : "") + (MiliSeconds.length <= 4 ? "0" : "");
+                };
+                $("timer").textContent = TimeText;
+            };
+
+            function SetModifier(modifier) {
+                Timer.Modifier = parseInt(modifier, 10);
+                Timer.Modifier = Timer.Modifier / 20.0;
+                if (Timer.Modifier < 0) {
+                    Timer.Modifier = 1 / ((Timer.Modifier * -1) + 1);
+                } else {
+                    Timer.Modifier += 1;
+                }
+            }
+
+            function Start() {
+                Stop();
+                SetModifier($("modifier").value);
+                var Time = Split($("time").value);
+                Timer.Hours = Time[0];
+                Timer.Minutes = Time[1] % 60;
+                Timer.Seconds = Time[2] % 60;
+                Timer.PreviousHours = Timer.Hours;
+                Timer.PreviousMinutes = Timer.Minutes;
+                Timer.PreviousSeconds = Timer.Seconds;
+                Timer.Started = (new Date()).getTime();
+                Timer.Interval = window.setInterval(Timer.Update, 15);
+            };
+
+            function Change(modifier) {
+                Timer.Started = (new Date()).getTime();
+                Timer.Hours = Timer.PreviousHours;
+                Timer.Minutes = Timer.PreviousMinutes;
+                Timer.Seconds = Timer.PreviousSeconds;
+                SetModifier(modifier);
+            };
+
+            function Stop() {
+                if (Timer.Interval) {
+                    window.clearInterval(Timer.Interval);
+                    Timer.Interval = null;
+                }
+            };
+
+            function Reset() {
+                Stop();
+                $("timer").textContent = "00:00.00";
+                $("time").value = "00:00";
+                $("modifier").value = 0;
+            };
+
+            // ]]>
+        </script>
+        <fieldset class="center small">
+            <div>
+                Timer: <input id="time" type="time" value="00:00" size="8" />
+            </div>
+            <div>
+                Modifier: <input id="modifier" type="range" min="-100" max="100" step="1" value="0" oninput="Change(this.value)" onchange="Change(this.value)" />
+            </div>
+            <div>
+                <input id="start" type="button" value="Start" onclick="Start();" />
+                <input id="stop" type="button" value="Stop" onclick="Stop();" />
+                <input id="reset" type="button" value="Reset" onclick="Reset();" />
+            </div>
+        </fieldset>
+    </div>
+</body>
+</html>
